@@ -1,5 +1,7 @@
 import { describe, beforeEach, test, expect } from "vitest";
 import City, { calculateDurationDays } from "../city.ts";
+import Accommodation from "../accommodation.ts";
+
 
 function createCity(): City {
   return new City(
@@ -8,6 +10,7 @@ function createCity(): City {
     new Date("2023-05-01"),
     new Date("2023-05-04"),
     "Notas",
+    new Accommodation("NombreAccommodation", 200),
   );
 }
 
@@ -160,6 +163,8 @@ describe("Duration in days", () => {
       "TestCountry",
       new Date("2023-05-01"),
       new Date("2023-05-01"),
+      "notas",
+      new Accommodation("Prueba",200),
     );
     expect(singleDayCity.getDurationDays()).toBe(1);
   });
@@ -169,5 +174,38 @@ describe("Duration in days", () => {
     city.setDateTo(new Date("2023-05-01"));
 
     expect(city.getDurationDays()).toBe(0);
+  });
+
+});
+
+
+
+describe("City accommodation", () => {
+  let city: City;
+  let accommodation: Accommodation;
+
+  beforeEach(() => {
+    city = createCity();
+    accommodation = new Accommodation("Hotel", 200);
+  });
+
+  test("agregar accommodation correctamente", () => {
+    const ciudad = new City(
+      "TestCity",
+      "TestCountry",
+      new Date("2023-05-01"),
+      new Date("2023-05-04"),
+    );
+
+    ciudad.addAccommodation(accommodation);
+
+    expect(ciudad.getAccommodation()).toBe(accommodation);
+  });
+
+
+  test("no se debe suplantar una accommodation existente", () => {
+    city.addAccommodation(accommodation);
+    const acc = new Accommodation("suplanta",100);
+    expect(()=>city.getAccommodation).not.toBe(acc);
   });
 });
