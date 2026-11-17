@@ -1,5 +1,7 @@
+
 import TripManager from "./domain/tripManager.ts";
 import City from "./domain/city.ts";
+import Accommodation from "./domain/accommodation.ts";
 
 const manager = new TripManager();
 const form = document.getElementById("city-form") as HTMLFormElement | null;
@@ -18,20 +20,24 @@ function renderCities(): void {
     const dateFrom = formatDateIso(city.getDateFrom ? city.getDateFrom() : "");
     const dateTo = formatDateIso(city.getDateTo ? city.getDateTo() : "");
     const country = city.getCountry ? city.getCountry() || "" : "";
-    const duration = city.getDurationDays() ? city.getDurationDays() : "";
+    const countryBadge = `<span class="badge text-bg-primary">${country}</span>`;    const duration = city.getDurationDays() ? city.getDurationDays() : "";
     const notesText = city.getNotes ? String(city.getNotes() || "") : "";
+    const accommodation = city.getAccommodation();
+    const accommodationName = accommodation?.name || "—";
+    const accommodationCost = accommodation?.cost ?? "—";
     const notesHtml = notesText
       ? notesText
       : '<span class="text-muted">Sin datos</span>';
     tr.innerHTML = `<td>
     <strong>${city.getName()}</strong>
     </td>
-    <td>${country}</td>
+    <td>${countryBadge}</td>
+    <td>${accommodationName}</td>
+    <td>${accommodationCost}</td>
     <td>${duration ? `${duration} días` : "—"}</td>
     <td>${dateFrom}</td>
     <td>${dateTo}</td>
     <td>${notesHtml}</td>`;
-    citiesTbody.appendChild(tr);
   });
 }
 
@@ -47,23 +53,53 @@ function handleCityFormSubmit(e: SubmitEvent): void {
     .value;
   const notes = (document.getElementById("city-notes") as HTMLTextAreaElement)
     .value;
+  const accommodationName = (
+    document.getElementById("accommodation-name") as HTMLInputElement
+  ).value;
 
-  const city = new City(
-    name,
-    country,
-    new Date(dateFrom),
-    new Date(dateTo),
-    notes,
-  );
-  if (!city) {
-    showToast("Error", "No se pudo crear la ciudad", "danger");
+  const accommodationCost = (
+    document.getElementById("accommodation-cost") as HTMLInputElement
+  ).value;
+
+  if (
+    accommodationName.trim() === "" ||
+    accommodationCost.trim() === "" ||
+    !Number.isInteger(Number(accommodationCost)) ||
+    Number(accommodationCost) < 0
+  ) {
+    showToast("Error", "Ingresá un alojamiento y un costo entero válido mayor o igual a 0", "danger");
     return;
   }
-  if (!saveCity(city)) return;
-  showToast("Éxito", "Ciudad agregada", "success");
-  renderCities();
-  form?.reset();
-  setDefaultDates();
+
+  try {
+    const accommodation = new Accommodation(
+      accommodationName,
+      Number(accommodationCost),
+    );
+
+    const city = new City(
+      name,
+      country,
+      new Date(dateFrom),
+      new Date(dateTo),
+      notes,
+      accommodation,
+    );
+
+    if (!city) {
+      showToast("Error", "No se pudo crear la ciudad", "danger");
+      return;
+    }
+
+    if (!saveCity(city)) return;
+    showToast("Éxito", "Ciudad agregada", "success");
+    renderCities();
+    form?.reset();
+    setDefaultDates();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    showToast("Error", message, "danger");
+  }
 }
 
 function getTodayIso(): string {
